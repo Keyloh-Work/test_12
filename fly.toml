@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for test-12-zhcc5g on 2024-12-17T08:31:02Z
+# fly.toml app configuration file generated for test-12-iwyvpg on 2024-12-17T08:49:06Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'test-12-zhcc5g'
+app = 'test-12-iwyvpg'
 primary_region = 'hkg'
 
 [build]
