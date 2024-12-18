@@ -1,4 +1,3 @@
-# main.py
 import os
 import logging
 import discord
@@ -18,21 +17,25 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='/', intents=intents)
 
+# タイムゾーンはJST
 JST = pytz.timezone('Asia/Tokyo')
 scheduler = AsyncIOScheduler(timezone=JST)
 
-bot.user_points = {}  # {user_id: int} ユーザーポイント管理用
-bot.user_cards = {}
-bot.daily_auto_points = 1  # 毎日付与されるポイントの初期値
+# ユーザーデータ類
+bot.user_points = {}      # {user_id: int} ユーザーポイント
+bot.user_cards = {}       # {user_id: [card_no, ...]} ユーザーが取得したカード
+bot.daily_auto_points = 1 # 毎日00:00に自動付与されるポイント数(初期値1)
+bot.last_gacha_usage = {} # クールダウン用（不要なら削除可能）
 
 def ensure_user_points(user_id):
+    # ユーザーが未登録の場合初期値10ptで登録
     if user_id not in bot.user_points:
-        bot.user_points[user_id] = 10  # 初期値10ポイント
+        bot.user_points[user_id] = 10
 
 bot.ensure_user_points = ensure_user_points
 
 def add_daily_points():
-    # 毎日00:00に全ユーザーにbot.daily_auto_points分ポイント付与(上限10)
+    # 毎日00:00に全ユーザーにbot.daily_auto_points分ポイント付与(最大10pt)
     for user_id, points in bot.user_points.items():
         if points < 10:
             new_points = min(10, points + bot.daily_auto_points)
@@ -44,9 +47,12 @@ scheduler.add_job(add_daily_points, 'cron', hour=0, minute=0)
 @bot.event
 async def on_ready():
     logger.info(f'Logged in as {bot.user}!')
+    # Cog読み込み
     await bot.load_extension("cogs.gacha")
     await bot.load_extension("cogs.admin")
     await bot.tree.sync()
+
+    # スケジューラー起動
     scheduler.start()
     logger.info("Scheduler started.")
 
