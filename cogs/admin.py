@@ -1,8 +1,7 @@
+# cogs/admin.py
 import discord
 from discord.ext import commands
 from discord import app_commands
-import csv
-import chardet
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,7 +10,6 @@ class AdminCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    # 新規追加：指定ユーザーにポイント付与(上限10)
     @app_commands.command(name="addpointuser", description="指定ユーザーにポイントを付与(上限10)")
     @app_commands.default_permissions(administrator=True)
     async def addpointuser(self, interaction: discord.Interaction, member: discord.Member, pointnumber: int):
@@ -24,7 +22,6 @@ class AdminCog(commands.Cog):
             ephemeral=True
         )
 
-    # 新規追加：全ユーザーにポイント付与(上限10)
     @app_commands.command(name="addpointall", description="全ユーザーに指定ポイントを付与(上限10)")
     @app_commands.default_permissions(administrator=True)
     async def addpointall(self, interaction: discord.Interaction, pointnumber: int):
@@ -42,8 +39,19 @@ class AdminCog(commands.Cog):
             ephemeral=True
         )
 
-    # 旧コマンド(gachareset/gacharesetall)削除済み
-    # setresetdateコマンドも要件にないので削除済み
+    @app_commands.command(name="addpointauto", description="毎日00:00時に自動付与されるポイントを調整します")
+    @app_commands.default_permissions(administrator=True)
+    async def addpointauto(self, interaction: discord.Interaction, pointnumber: int):
+        if pointnumber < 0:
+            await interaction.response.send_message("0以上の値を指定してください。", ephemeral=True)
+            return
+        old_value = self.bot.daily_auto_points
+        self.bot.daily_auto_points = pointnumber
+        await interaction.response.send_message(
+            f"毎日00:00時に自動付与されるポイントを {old_value} から {pointnumber} に変更しました。\n"
+            f"次に迎える00:00から {pointnumber} ポイントが付与されます。",
+            ephemeral=True
+        )
 
 async def setup(bot):
     await bot.add_cog(AdminCog(bot))
