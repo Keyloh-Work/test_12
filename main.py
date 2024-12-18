@@ -17,6 +17,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='/', intents=intents)
 
+bot.gacha_data_path = 'data/gacha_data.csv'
+
 # タイムゾーンはJST
 JST = pytz.timezone('Asia/Tokyo')
 scheduler = AsyncIOScheduler(timezone=JST)
