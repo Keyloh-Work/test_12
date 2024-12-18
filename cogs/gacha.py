@@ -10,7 +10,7 @@ import time
 
 logger = logging.getLogger(__name__)
 
-COOLDOWN = 10.0  # 引き続きクールダウンは維持（必要なければ削除可）
+COOLDOWN = 10.0  # クールダウン必要なければ0や削除も可能
 
 class PaginatorView(discord.ui.View):
     def __init__(self, data, collected_cards, per_page=20):
@@ -73,7 +73,6 @@ class GachaButtonView(discord.ui.View):
         await interaction.response.defer()
 
         user_id = interaction.user.id
-        # ポイント確認と消費
         self.bot.ensure_user_points(user_id)
         points = self.bot.user_points[user_id]
         if points <= 0:
@@ -84,13 +83,11 @@ class GachaButtonView(discord.ui.View):
         self.bot.user_points[user_id] = points - 1
 
         url_info = await self.get_random_url()
-
         if url_info is None:
             await interaction.followup.send("ガチャデータの読み込みに失敗しました。", ephemeral=True)
-            # ポイント返却するかは任意だが、ここでは返却しないでおく
             return
 
-        # カード追加
+        # 新カード獲得判定
         if url_info["no"] not in self.bot.user_cards.get(user_id, []):
             self.bot.user_cards.setdefault(user_id, []).append(url_info["no"])
 
@@ -130,7 +127,7 @@ class GachaButtonView(discord.ui.View):
             logger.error(f"CSVファイルが見つかりません: {e}")
             return None
         except Exception:
-            logger.exception("CSV読み込み中にエラー発生")
+            logger.exception("CSV読み込み中にエラーが発生しました:")
             return None
 
         if not gacha_data:
@@ -173,7 +170,6 @@ class GachaButtonView(discord.ui.View):
         await message.edit(embed=embed)
         await asyncio.sleep(1)
 
-        # 最終的に残りポイントを表示
         embed.description = f"残りポイント: {remaining_points} pt"
         await message.edit(embed=embed)
 
@@ -184,26 +180,24 @@ class GachaCog(commands.Cog):
 
     @app_commands.command(name="gacha", description="ガチャを回します")
     async def gacha_cmd(self, interaction: discord.Interaction):
-        # クールダウンチェック（必要なければ削除可能）
+        # クールダウンチェック(必要なければ削除可能)
         user_id = interaction.user.id
         now = time.time()
         last_time = self.bot.last_gacha_usage.get(user_id, 0)
         if now - last_time < COOLDOWN:
             remain = int(COOLDOWN - (now - last_time))
             await interaction.response.send_message(
-                f"クールダウン中です。あと {remain} 秒ほどお待ちください。",
+                f"クールダウン中です。あと {remain} 秒お待ちください。",
                 ephemeral=True
             )
             return
         self.bot.last_gacha_usage[user_id] = now
 
-        # 初期ポイント確保
         self.bot.ensure_user_points(user_id)
 
         if isinstance(interaction.channel, discord.Thread) and interaction.channel.name.startswith('gacha-thread-'):
             points = self.bot.user_points[user_id]
             view = GachaButtonView(self.bot, user_id)
-            # ポイント表示に変更
             await interaction.response.send_message(
                 f"下のボタンを押してガチャを回してください。\n残りポイント: {points} pt",
                 view=view,
@@ -215,7 +209,7 @@ class GachaCog(commands.Cog):
                 ephemeral=True
             )
 
-    @app_commands.command(name="creategachathread", description="専用ガチャスレッドを作成")
+    @app_commands.command(name="creategachathread", description="専用ガチャスレッドを作成します")
     async def create_gacha_thread(self, interaction: discord.Interaction):
         if interaction.channel.name != "gacha-channel":
             await interaction.response.send_message("このコマンドは専用のガチャチャンネルでのみ使用できます。", ephemeral=True)
@@ -230,13 +224,13 @@ class GachaCog(commands.Cog):
             await gacha_thread.add_user(interaction.user)
             await gacha_thread.edit(slowmode_delay=10)
             await gacha_thread.send(
-                f"{interaction.user.mention}\nここはあなた専用のガチャスレッドです。`/gacha`でガチャボタンが表示されます。"
+                f"{interaction.user.mention}\nここはあなた専用のガチャスレッドです。`/gacha`でガチャボタンが表示されます。\n"
                 "それを押すとガチャ結果が表示されます。\n"
                 "**注意：このスレッドからは退出しないでください。**"
             )
             await interaction.response.send_message("専用ガチャスレッドを作成しました。", ephemeral=True)
 
-    @app_commands.command(name="artlist", description="取得したカードの一覧を表示")
+    @app_commands.command(name="artlist", description="取得したカードの一覧を表示します")
     async def artlist_cmd(self, interaction: discord.Interaction):
         self.bot.ensure_user_points(interaction.user.id)
         if isinstance(interaction.channel, discord.Thread) and interaction.channel.name.startswith('gacha-thread-'):
@@ -258,7 +252,7 @@ class GachaCog(commands.Cog):
                 await interaction.response.send_message("データファイルが見つかりません。管理者に連絡してください。", ephemeral=True)
                 return
             except Exception:
-                logger.exception("CSV読み込み中に予期せぬエラーが発生しました:")
+                logger.exception("CSV読み込み中にエラーが発生しました:")
                 await interaction.response.send_message("内部エラーが発生しました。管理者に連絡してください。", ephemeral=True)
                 return
 
