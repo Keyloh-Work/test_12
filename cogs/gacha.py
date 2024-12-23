@@ -147,7 +147,7 @@ class GachaButtonView(discord.ui.View):
         message = await interaction.followup.send("ガチャ中…", ephemeral=False)
 
         await asyncio.sleep(1)
-        embed = discord.Embed(title="秋のハロウィンガチャ")
+        embed = discord.Embed(title="クリスマスガチャ")
         await message.edit(content=None, embed=embed)
         await asyncio.sleep(1)
 
